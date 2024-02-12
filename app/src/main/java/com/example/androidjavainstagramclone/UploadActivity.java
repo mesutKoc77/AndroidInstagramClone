@@ -9,6 +9,7 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -18,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.view.View;
+import android.widget.Toast;
 
 import com.example.androidjavainstagramclone.databinding.ActivityUploadBinding;
 import com.google.android.material.snackbar.Snackbar;
@@ -26,9 +28,12 @@ public class UploadActivity extends AppCompatActivity {
 
     ActivityResultLauncher <Intent> activityResultLauncher; //bu Launcher'lari eger onCreate icerisinde baslatmaz isem bu durum uygulamayi cokertir.
     ActivityResultLauncher<String> permissionLauncher;
+    /*
+    Birincisi (activityResultLauncher) Intent başlatmak için kullanılırken, ikincisi (permissionLauncher) izin istemek için kullanılır.
+     */
     Uri imageData;
     private ActivityUploadBinding binding;
-    Bitmap selectedImage;
+    //Bitmap selectedImage; //isternirse, bitmap ile de yapilabilir bu.
 
 
     @Override
@@ -37,9 +42,15 @@ public class UploadActivity extends AppCompatActivity {
         binding=ActivityUploadBinding.inflate(getLayoutInflater());
         View view=binding.getRoot();
         setContentView(view);
+        registerLauncer();
     }
 
     public void uploadButtonClicked (View view) {
+        //firebase de epolama ile veritabani farkli kavramlar olarak adlandiriliyor ve farkli islevleri var.
+        //Depolama, genelde kullanicinin foto, video vb yani buyuk dosyalarinin kayit edildgi bir alan iken
+        //Ver tabani ise, kullanicinin mail, sipasiin url i, sohbet uygulamasininda kullanicinin mesajlari vb.
+        //yani daha dinamik olanlari veri tababnindas sakliyor firebase.
+        //BUNUMLA ilgili notlara bu class in en altinda ulasabilirisnn.
 
     }
 
@@ -47,44 +58,79 @@ public class UploadActivity extends AppCompatActivity {
         //manifest e izin istedigimizi belirrten kodu ekledik
         //once izin var mi onu kontrol edecgz.
         //eger izin yoksa, asaguida oyzellikle opermissinlerin android. (nokta) dan secmek onemli.
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-            //eger izni gostermemenizin mantigini kullaniciya aktarmamiz gerekiyorsa ki bununAndroid sistemin kendisi karar veriyor.
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)){
-                Snackbar.make(view, "Izin Gerekli, Permission needed!",Snackbar.LENGTH_INDEFINITE) //yani kullanici tamam yani anladim diyecegi ana kadar goster demis olduk
-                        .setAction("Izin Ver, Give Permission", new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                //simdi olusturdugmuz "Izin Ver, Give Permission" butonuna tikladi ve ne olacagini bu methodun icerisine yaziyoruz.
-                                // yani biz burada "ask question ile kullanicdan izni istiyoruz."
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)!= PackageManager.PERMISSION_GRANTED){
+                //eger izni gostermemenizin mantigini kullaniciya aktarmamiz gerekiyorsa ki bununAndroid sistemin kendisi karar veriyor.
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_MEDIA_IMAGES)){
+                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar",Snackbar.LENGTH_INDEFINITE) //yani kullanici tamam yani anladim diyecegi ana kadar goster demis olduk
+                            .setAction("Izin Ver, Give Permission Butonu", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    //simdi olusturdugmuz "Izin Ver, Give Permission" butonuna tikladi ve ne olacagini bu methodun icerisine yaziyoruz.
+                                    // yani biz burada "ask question ile kullanicdan izni istiyoruz."
+                                    //ask permission //izin iste
+                                    permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
 
-                            }
-                        }) // yani burada kullanici ya bir buton gosterecegz ve izin ver gibi bir buton. Bu butonu tiklayacak ve tikladiktan sonra ise ne olacagini "bir Listener"
-                        //ile koda dokecegiz.
-                        .show();
-            } else //yani kullaniciya iznin gosterilmesinin "mantigi" yoksa, yine ask question ile kullanicdan izni istiyoruz.. Yani yukaridaki onClick methodun da da burada da izni iyteyecgz ama burdakinin farki
-            //kullaniciya ifade gostermeyesimiz.
+
+                                }
+                            }) // yani burada kullanici ya bir buton gosterecegz ve izin ver gibi bir buton. Bu butonu tiklayacak ve tikladiktan sonra ise ne olacagini "bir Listener"
+                            //ile koda dokecegiz.
+                            .show();
+                } else //yani kullaniciya iznin gosterilmesinin "mantigi" yoksa, yine ask question ile kullanicdan izni istiyoruz.. Yani yukaridaki onClick methodun da da burada da izni iyteyecgz ama burdakinin farki
+                //kullaniciya ifade gostermeyesimiz.
+                //ask permission //izin iste
+                {
+                    permissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
+                }
+            } else //yani kullanici oncesinden zaten izin vermisse diger bir deyisle "ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED" false donerse
             {
-
+                // o zaman zaten kullanicinin direkt galerisine gidecez.
+                Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                //direkt gidemiyorduk bu intent ile ancak bur result launcer ile biz ne yapacgimizi aciklayacagiz oncelikle. bununicin parametre olaak Intent isteyen activityresultlauncer
+                //kullanacagiz. ve burada neler yaocagimizi anlatacgiz kendirisine.
+                //ve ne yapmak istedigimizi asagida anlattik o halde gidelim  ve methodumuzu cagirqalim.
+                activityResultLauncher.launch(intentToGallery); //burda izin devreden ciktigi icin yani izin zaten verilmis oldugu icin, kullaniciyi direkt aktiviteye yonlendiriyouz.
+                //yukarida ise, kullanicdan henuz izin alamadik.
 
             }
-        } else //yani kullanici oncesinden zaten izin vermisse diger bir deyisle "ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED" false donerse
-        {
-            // o zaman zaten kullanicinin direkt galerisine gidecez.
-            Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            //direkt gidemiyorduk bu intent ile ancak bur result launcer ile biz ne yapacgimizi aciklayacagiz oncelikle. bununicin parametre olaak Intent isteyen activityresultlauncer
-            //kullanacagiz. ve burada neler yaocagimizi anlatacgiz kendirisine.
 
         }
+        //yani Android Surumu 33 ve altinda ise asagii yap. Yukaridakinin aynisi ama tek far su:
+        //İlk blok, Manifest.permission.READ_MEDIA_IMAGES iznini kontrol eder.
+        //İkinci blok ise Manifest.permission.READ_EXTERNAL_STORAGE iznini kontrol eder.
+        else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
 
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)){
+                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar",Snackbar.LENGTH_INDEFINITE)
+                            .setAction("Izin Ver, Give Permission Butonu", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+                                }
+                            })
+                            .show();
+                } else
+                {
+                    permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
+                }
+            } else
+            {
+                Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                activityResultLauncher.launch(intentToGallery);
+            }
+        }
     }
 
 
     public void registerLauncer() {
+
+        //1. register sonuc ve ne yapmak istedigimiz.
         activityResultLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
             @Override
             public void onActivityResult(ActivityResult result) {
                 //simdi kullanicinin gallery sine gittik, kullanici ne yapti ? Sonuc ne diyoruz? Birseyleri secti mi vaz mi gecti, sd kart mi cikti bunu da kontrol edecgz.
-                if (result.getResultCode()==RESULT_OK)//hersey ok ise, yani kullanicinin gallerysine gitti isek
+                if (result.getResultCode()== Activity.RESULT_OK)//hersey ok ise, yani kullanicinin gallerysine gitti isek
                 {
                     Intent intentFromResult = result.getData(); //veriyi alirken bana donus bir intent olarak donecek.
                     //simdi bana birseyler dondu ama bu veri bos mu degil mi onu kontrrol ediyoruz.
@@ -122,7 +168,37 @@ public class UploadActivity extends AppCompatActivity {
                     }
                 }
             }
-        }); //bana bir sonuc olacagi yani bir eylem yapacagim icin bana bir Activity baslat dedim; ama sonrada bunun sonucunda yani sonuc da ne olacagini da Callback ile anlatmam gerekiyor.
+        });//bana bir sonuc olacagi yani bir eylem yapacagim icin bana bir Activity baslat dedim; ama sonrada bunun sonucunda yani sonuc da ne olacagini da Callback ile anlatmam gerekiyor.
+
+
+        //2. register sonuc ve ne yapmak istedigimiz.
+        // aslinda kodu yazarken ikinci yi yazmaya ilkin baslarsak daha mantikli olabilri. Yni permissionLauncher ve sonrasinda activityResultLauncher
+        //methoduna devam etmek daha mantikli gorunuyor.
+        permissionLauncher=registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
+            @Override
+            public void onActivityResult(Boolean result) {
+                //evet izin verildikten sonraki durumu anlatmak icin buradaki callback i kullandik.
+                //buradaki paramtree baklildiginda bir result arguman olarak Result verilmi yani,. bize bir izin verildi mi ?
+                //result=true demek bize izin verildigi anlamina geliyor.
+                if (result){
+                    //yukarida da belittigim gibi. kullanicidan izin alirsak ne yapacagimizi Result Launcher larda anlattik. Yani galeriye gidecek, ordan bilgilweri alcak ve simdi de
+                    //o methidu burada cagiracagz. Ki izin Launcher ile activityLauncher imizi irtibatlandirmis olalim-
+                    Intent intentToGallery=new Intent(Intent.ACTION_PICK,MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    activityResultLauncher.launch(intentToGallery); // ve yukarida activityResultLauncher'da ne yapmak isteidigmizi anlatmis ve buradad da bu intenti baslt<mis olduk.
+
+
+
+                } else //yani izin verilmez ise?
+                {
+                    Toast.makeText(UploadActivity.this,"Permission needed! permissionLauncher", Toast.LENGTH_LONG).show();
+
+                }
+
+            }
+        });
+
+
+
 
     }
 
@@ -171,3 +247,22 @@ Bitmap ve URI, farklı senaryolarda kullanılır ve hangisinin kullanılacağı,
 
 Genel olarak, URI, dosyanın konumunu belirtmek ve dosya seçim işlemlerinde kullanmak için kullanılırken, Bitmap, bir görüntünün işlenmesi, manipülasyonu veya görsel olarak gösterilmesi gerektiğinde kullanılır. Hangisinin kullanılacağı, uygulamanın gereksinimlerine ve kullanım senaryolarına bağlı olarak değişir.
                          */
+
+/*
+Evet, tabii ki! Firebase'de depolama ve veritabanı kavramları farklı ama birbirini tamamlayan iki önemli bileşendir. İşlevsellikleri ve kullanım alanları birbirinden oldukça farklıdır. İşte her ikisi arasındaki farkları ve örnekler:
+
+Firebase Depolama (Firebase Storage):
+
+Firebase Depolama, kullanıcıların medya dosyalarını (resimler, videolar, ses dosyaları vb.) saklamak için kullanılır.
+Bu depolama alanı, genellikle kullanıcıların yüklediği veya indirdiği dosyaları barındırmak için kullanılır.
+Örneğin, bir kullanıcının profil resmini yüklemesi veya uygulamaya ait resimlerin, videoların depolanması Firebase Depolama ile gerçekleştirilir.
+Firebase Veritabanı (Firebase Realtime Database veya Firebase Firestore):
+
+Firebase Veritabanı, uygulamanın dinamik verilerini saklamak ve senkronize etmek için kullanılır.
+Veritabanı, uygulamanın kullanıcı bilgileri, mesajlar, siparişler, puanlar gibi dinamik verilerini depolar.
+Örneğin, bir sohbet uygulamasında kullanıcıların mesajları veya bir e-ticaret uygulamasında siparişler Firebase Veritabanı'nda saklanır.
+Örnek:
+
+Bir fotoğraf paylaşım uygulaması düşünelim. Kullanıcılar bu uygulama aracılığıyla fotoğraflar yükleyebilirler. Kullanıcının fotoğrafı yüklendikten sonra Firebase Depolama'da saklanır. Fotoğrafın URL'si daha sonra Firebase Veritabanı'na kaydedilir. Bu sayede uygulama, kullanıcının yüklediği fotoğrafları depolama ve veritabanı arasında verimli bir şekilde yönetebilir.
+Kısacası, Firebase Depolama genellikle büyük medya dosyalarını saklamak için kullanılırken, Firebase Veritabanı uygulamanın dinamik verilerini yönetmek ve senkronize etmek için kullanılır. Her ikisi de Firebase platformunda uygulama geliştirme sürecinde önemli roller üstlenir.
+ */
