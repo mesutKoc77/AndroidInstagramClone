@@ -23,6 +23,10 @@ import android.widget.Toast;
 
 import com.example.androidjavainstagramclone.databinding.ActivityUploadBinding;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
 public class UploadActivity extends AppCompatActivity {
 
@@ -35,6 +39,13 @@ public class UploadActivity extends AppCompatActivity {
     private ActivityUploadBinding binding;
     //Bitmap selectedImage; //isternirse, bitmap ile de yapilabilir bu.
 
+    private FirebaseStorage fireBaseStorage; //FirebaseStorage nesnesini kullanarak uygulama, dosyaları güvenli bir şekilde depolayabilir ve bu dosyalara erişim sağlayabilir. Bu sayede uygulama, kullanıcıların dosyalarını saklamak ve paylaşmak için güvenilir bir çözüm sunar.daha ayrintili bilgi en altta 5. bolumde
+    private FirebaseAuth auth; //Bu nesne, kullanıcıların uygulamaya giriş yapması, kaydolması, şifrelerini sıfırlaması gibi kimlik doğrulama işlemlerini yönetir.daha ayrintili bilgi en altta 4. bolumde
+    private FirebaseFirestore firebaseFirestore; //Firebase Firestore nesnesini oluşturmanın temel amacı, Firebase bulut tabanlı veritabanına erişmek ve bu veritabanında veri işlemleri yapmaktır. Bu nesne, Firebase Firestore veritabanına erişmek, belirli bir koleksiyon içinde belirli belgeleri okumak, yazmak, güncellemek veya silmek için kullanılır.
+    //DAta Ayrintili bilgi, sayfanin en altinda. 3. bolumde
+
+    private StorageReference storageReference;//6.bolumde ayrinti var. Örneğin, bir ürün resmi yüklemek istediğinizde, bu referansı kullanarak ilgili klasöre erişebilir ve resmi yükleyebilirsiniz. Bu sayede Firebase Storage'da dosyaları organize etmek ve yönetmek daha kolay hale gelir.
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +54,11 @@ public class UploadActivity extends AppCompatActivity {
         View view=binding.getRoot();
         setContentView(view);
         registerLauncer();
+        fireBaseStorage=FirebaseStorage.getInstance();
+        auth=FirebaseAuth.getInstance();
+        firebaseFirestore=FirebaseFirestore.getInstance();
+        storageReference=fireBaseStorage.getReference();
+
     }
 
     public void uploadButtonClicked (View view) {
@@ -51,6 +67,10 @@ public class UploadActivity extends AppCompatActivity {
         //Ver tabani ise, kullanicinin mail, sipasiin url i, sohbet uygulamasininda kullanicinin mesajlari vb.
         //yani daha dinamik olanlari veri tababnindas sakliyor firebase.
         //BUNUMLA ilgili notlara bu class in en altinda ulasabilirisnn.
+
+
+
+
 
     }
 
@@ -207,6 +227,7 @@ public class UploadActivity extends AppCompatActivity {
 
 
 }
+//1.
 /*
                         Eğer sadece URI'yi ImageView'de gösterirseniz ve Bitmap'e dönüştürmezseniz, uygulamanın işlemesi açısından bir fark olmayacaktır. Çünkü ImageView, URI'yi doğrudan gösterebilir. Ancak, bazı durumlarda Bitmap'e dönüştürmek daha fazla esneklik sağlayabilir:
 
@@ -247,6 +268,7 @@ Bitmap ve URI, farklı senaryolarda kullanılır ve hangisinin kullanılacağı,
 
 Genel olarak, URI, dosyanın konumunu belirtmek ve dosya seçim işlemlerinde kullanmak için kullanılırken, Bitmap, bir görüntünün işlenmesi, manipülasyonu veya görsel olarak gösterilmesi gerektiğinde kullanılır. Hangisinin kullanılacağı, uygulamanın gereksinimlerine ve kullanım senaryolarına bağlı olarak değişir.
                          */
+//2.
 
 /*
 Evet, tabii ki! Firebase'de depolama ve veritabanı kavramları farklı ama birbirini tamamlayan iki önemli bileşendir. İşlevsellikleri ve kullanım alanları birbirinden oldukça farklıdır. İşte her ikisi arasındaki farkları ve örnekler:
@@ -265,4 +287,75 @@ Veritabanı, uygulamanın kullanıcı bilgileri, mesajlar, siparişler, puanlar 
 
 Bir fotoğraf paylaşım uygulaması düşünelim. Kullanıcılar bu uygulama aracılığıyla fotoğraflar yükleyebilirler. Kullanıcının fotoğrafı yüklendikten sonra Firebase Depolama'da saklanır. Fotoğrafın URL'si daha sonra Firebase Veritabanı'na kaydedilir. Bu sayede uygulama, kullanıcının yüklediği fotoğrafları depolama ve veritabanı arasında verimli bir şekilde yönetebilir.
 Kısacası, Firebase Depolama genellikle büyük medya dosyalarını saklamak için kullanılırken, Firebase Veritabanı uygulamanın dinamik verilerini yönetmek ve senkronize etmek için kullanılır. Her ikisi de Firebase platformunda uygulama geliştirme sürecinde önemli roller üstlenir.
+ */
+
+//3.
+
+/*
+Firebase Firestore nesnesini oluşturmanın temel amacı, Firebase bulut tabanlı veritabanına erişmek ve bu veritabanında veri işlemleri yapmaktır. Bu nesne, Firebase Firestore veritabanına erişmek, belirli bir koleksiyon içinde belirli belgeleri okumak, yazmak, güncellemek veya silmek için kullanılır.
+
+Yukarıdaki kodda, `FirebaseFirestore` nesnesi, `onCreate` metodunda Firebase bağlantısını oluşturmak için kullanılır. Bu nesne, veri tabanına erişim sağlar ve uygulamanın çeşitli bölümlerinde veri tabanı işlemlerini gerçekleştirmek için kullanılır. Örneğin, bu uygulamada, kullanıcıların yüklediği medya dosyalarını Firebase Firestore veritabanında saklamak için kullanılabilir.
+
+Kısacası, `FirebaseFirestore` nesnesini oluşturarak uygulama, Firebase Firestore veritabanına erişmeyi sağlar ve bu veritabanında veri işlemlerini gerçekleştirebilir. Bu sayede uygulama, bulut tabanlı bir veri depolama ve yönetim çözümü üzerinde veri saklayabilir, güncelleyebilir ve silebilir.
+
+ */
+
+//4.
+/*
+`FirebaseAuth` nesnesi, Firebase Authentication servisine erişim sağlar ve kullanıcı kimlik doğrulama işlemlerini gerçekleştirmek için kullanılır. Bu nesne, kullanıcıların uygulamaya giriş yapması, kaydolması, şifrelerini sıfırlaması gibi kimlik doğrulama işlemlerini yönetir.
+
+Yukarıdaki kodda, `FirebaseAuth` nesnesi, `onCreate` metodunda Firebase Authentication servisine erişim sağlamak için oluşturulmuştur. Bu nesne, kullanıcıların kimlik doğrulama işlemlerini yönetmek için kullanılabilir. Örneğin, kullanıcıların e-posta ve şifreleriyle giriş yapmasını sağlamak veya sosyal medya hesaplarıyla kimlik doğrulaması yapmalarını sağlamak için bu nesne kullanılabilir.
+
+Kısacası, `FirebaseAuth` nesnesini oluşturarak uygulama, Firebase Authentication servisine erişim sağlar ve kullanıcı kimlik doğrulama işlemlerini gerçekleştirebilir. Bu sayede uygulama, kullanıcıların güvenli bir şekilde giriş yapmasını ve kayıt olmasını sağlayabilir.
+
+ */
+
+//5.
+/*
+`FirebaseStorage` nesnesi, Firebase Storage servisine erişim sağlar ve dosyaların yüklenmesi, indirilmesi ve depolanması gibi işlemleri gerçekleştirmek için kullanılır. Bu nesne, uygulamanın dosya tabanlı verileri güvenli ve ölçeklenebilir bir şekilde saklamasını sağlar.
+
+Yukarıdaki kodda, `FirebaseStorage` nesnesi, `onCreate` metodunda Firebase Storage servisine erişim sağlamak için oluşturulmuştur. Bu nesne, kullanıcıların uygulamaya yüklediği dosyaları depolamak için kullanılabilir. Örneğin, kullanıcıların profil fotoğraflarını veya uygulamada paylaşacakları resimleri Firebase Storage üzerine yükleyebilir ve bu dosyalara erişim sağlayabilirler.
+
+Kısacası, `FirebaseStorage` nesnesini kullanarak uygulama, dosyaları güvenli bir şekilde depolayabilir ve bu dosyalara erişim sağlayabilir. Bu sayede uygulama, kullanıcıların dosyalarını saklamak ve paylaşmak için güvenilir bir çözüm sunar.
+ */
+//6.
+/*
+`storageReference = fireBaseStorage.getReference();` kod satırı, Firebase Storage'da bir referans oluşturmak için kullanılır.
+
+Firebase Storage, hiyerarşik bir yapıya sahip bir bulut depolama hizmetidir. Depolama birimleri, depolama alanı içinde düzenli bir şekilde düzenlenmiş "küpler" şeklinde organize edilir. Bu depolama birimlerine erişmek ve üzerlerinde işlemler yapmak için bir referansa ihtiyaç duyulur. Bu referanslar, belirli bir depolama birimine veya belirli bir dosyaya işaret eder.
+
+`fireBaseStorage.getReference()` metodu, varsayılan depolama birimine bir referans döndürür. Bu referans, depolama birimine genel erişim sağlar. Daha sonra bu genel referans üzerinden belirli bir klasöre veya dosyaya erişmek için alt klasörler veya dosya adları eklenir.
+
+Yukarıdaki kod satırında, `storageReference` değişkeni, Firebase Storage'da işlem yapmak için kullanılacak genel bir referansa atanır. Bu referans, Firebase Storage'da dosyaları yüklemek, indirmek veya silmek gibi işlemleri gerçekleştirmek için kullanılabilir.
+Tabii, ```storageReference = fireBaseStorage.getReference();``` kodu, Firebase Storage'da kullanılacak bir referans nesnesi oluşturur. Bu nesne, Firebase Storage'da belirli bir konumu temsil eder.
+
+Tabii, aşağıdaki örnekte storageReference nesnesi, Firebase Storage'da bir konumu temsil eder. Bu konum, yüklenen resmin nereye kaydedileceğini belirtir.
+
+Örneğin, kullanıcı bir resim seçtiğinde ve yüklemeyi onayladığında, bu seçilen resim Firebase Storage'da belirli bir konuma yüklenir. Bu konumu belirlemek için storageReference nesnesi kullanılır.
+
+storageReference = fireBaseStorage.getReference().child("images").child(imageData.getLastPathSegment());
+
+Bu kod parçası, storageReference nesnesini oluştururken, Firebase Storage'da "images" adlı bir klasör altında ve resmin orijinal adıyla birlikte belirli bir konumu hedefler. Bu, yüklenen resmin "images" klasörü altında orijinal adıyla saklanacağını belirtir.
+
+Bu şekilde, yüklenen her resim Firebase Storage'da "images" klasörü altında saklanır ve bu konumu belirlemek için storageReference nesnesi kullanılır. Bu sayede, yüklenen dosyaları düzenli bir şekilde saklamak ve yönetmek kolaylaşır.
+
+
+
+//
+Firebase Storage, bulut tabanlı bir depolama çözümüdür ve dosyaları saklamak için kullanılır. Her dosya veya klasör, bir konuma sahiptir. Bu konumlar, Firebase Storage'da birer referans olarak adlandırılır.
+
+Yukarıdaki kod, Firebase Storage'ın başlangıç noktasına bir referans oluşturur. Bu başlangıç ​​noktası, genellikle Firebase projesinin kök klasörüdür. Bu referans, Firebase Storage'da dosya veya klasörler oluşturmak, erişmek veya silmek için kullanılır.
+
+Örneğin, bir ürün resmi yüklemek istediğinizde, bu referansı kullanarak ilgili klasöre erişebilir ve resmi yükleyebilirsiniz. Bu sayede Firebase Storage'da dosyaları organize etmek ve yönetmek daha kolay hale gelir.
+
+
+Tabii, bir e-ticaret uygulamasını düşünelim. Kullanıcılar uygulama üzerinden ürün resimlerini ve bilgilerini görüntüleyebilirler. Satıcılar da ürünlerini uygulamaya yükleyebilirler. Bu durumda Firebase Storage ve Firebase Authentication kullanılabilir.
+
+Firebase Authentication:
+Kullanıcılar, uygulamaya giriş yapmak ve hesaplarını yönetmek için Firebase Authentication kullanabilirler. Kullanıcı adı ve şifreyle giriş yapabilirler veya Google, Facebook gibi üçüncü taraf kimlik doğrulama sağlayıcılarıyla giriş yapabilirler. Bu şekilde, kullanıcıların kimlikleri güvenle doğrulanır ve uygulamaya giriş yapar yapmaz kendi profillerine erişebilirler.
+
+Firebase Storage:
+Satıcılar, ürünlerinin resimlerini Firebase Storage'a yükleyebilirler. Örneğin, bir satıcı yeni bir ürün eklemek istediğinde, uygulama üzerinden ürün bilgilerini girer ve ürün resimlerini seçer. Ardından, bu resimler Firebase Storage'a yüklenir ve her bir ürün için birer URL oluşturulur. Bu URL'ler, uygulamadaki ilgili ürün sayfasında görüntülenebilir.
+
+Dolayısıyla, Firebase Authentication kullanıcıların kimlik doğrulamasını sağlar ve Firebase Storage ürün resimlerinin güvenli bir şekilde saklanmasını ve erişilmesini sağlar. Bu şekilde, kullanıcılar uygulama üzerinden güvenle ürünleri inceleyebilir ve satın alabilirler.
  */
