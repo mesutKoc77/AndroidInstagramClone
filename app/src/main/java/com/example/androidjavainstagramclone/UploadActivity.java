@@ -4,6 +4,7 @@ import androidx.activity.result.ActivityResult;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -22,11 +23,14 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.example.androidjavainstagramclone.databinding.ActivityUploadBinding;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 public class UploadActivity extends AppCompatActivity {
 
@@ -57,7 +61,8 @@ public class UploadActivity extends AppCompatActivity {
         fireBaseStorage=FirebaseStorage.getInstance();
         auth=FirebaseAuth.getInstance();
         firebaseFirestore=FirebaseFirestore.getInstance();
-        storageReference=fireBaseStorage.getReference();
+        storageReference=fireBaseStorage.getReference();//suan bize bombos bir referan veriyor. Baz bir referans veriyor bize. Referans, biz ilgili oge yi
+        //nereye koyacgimizi takip edecegimiz bir degiskendir.
 
     }
 
@@ -67,6 +72,22 @@ public class UploadActivity extends AppCompatActivity {
         //Ver tabani ise, kullanicinin mail, sipasiin url i, sohbet uygulamasininda kullanicinin mesajlari vb.
         //yani daha dinamik olanlari veri tababnindas sakliyor firebase.
         //BUNUMLA ilgili notlara bu class in en altinda ulasabilirisnn.
+
+        if (imageData != null) {
+            storageReference.child("/images/image.png").putFile(imageData).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+
+                }
+            }).addOnFailureListener(new OnFailureListener() {
+                @Override
+                public void onFailure(@NonNull Exception e) {
+
+                }
+            }); //burasi hakkinda detayli mantik bilgisi asagida Not 7'de.
+
+
+        }
 
 
 
@@ -358,4 +379,76 @@ Firebase Storage:
 Satıcılar, ürünlerinin resimlerini Firebase Storage'a yükleyebilirler. Örneğin, bir satıcı yeni bir ürün eklemek istediğinde, uygulama üzerinden ürün bilgilerini girer ve ürün resimlerini seçer. Ardından, bu resimler Firebase Storage'a yüklenir ve her bir ürün için birer URL oluşturulur. Bu URL'ler, uygulamadaki ilgili ürün sayfasında görüntülenebilir.
 
 Dolayısıyla, Firebase Authentication kullanıcıların kimlik doğrulamasını sağlar ve Firebase Storage ürün resimlerinin güvenli bir şekilde saklanmasını ve erişilmesini sağlar. Bu şekilde, kullanıcılar uygulama üzerinden güvenle ürünleri inceleyebilir ve satın alabilirler.
+ */
+
+//7
+/*
+´´´´´´´´´
+Bu yöntem, bir resmi Firebase Storage'a yüklemek için çağrılır. İşlevin adı "uploadButtonClicked", bu nedenle bu yöntem, bir yükleme düğmesine tıklandığında gerçekleşen olayları işler.
+
+İşlevin adım adım açıklaması şu şekildedir:
+
+1. `uploadButtonClicked` adlı bir metodumuz var ve bu metod bir `View` parametresi alır. Bu metod, bir düğmeye tıklandığında çağrılır.
+
+2. İlk olarak, metod içinde `if (imageData != null)` koşulu kontrol edilir. Bu koşul, imageData adlı bir değişkenin null olup olmadığını kontrol eder. imageData, yüklenecek resmin verilerini içerir. Eğer imageData null değilse, yani yüklenecek bir resim varsa, yükleme işlemi başlatılır.
+
+3. Yükleme işlemi başlatıldığında, `storageReference` adlı bir nesne üzerinde `child` metodu kullanılarak yüklenecek dosyanın yolunu belirleriz. Bu örnekte, "/images/image.png" olarak belirlenmiştir. Bu, Firebase Storage'da "images" klasörü içinde "image.png" adlı bir dosyanın oluşturulacağını belirtir.
+
+4. Ardından, `putFile` metodu ile imageData, belirtilen yola yüklenir. Bu işlem, bir `UploadTask` nesnesi döndürür ve bu işlem asenkron olarak gerçekleşir.
+
+5. `addOnSuccessListener` metodu, yükleme işlemi başarılı olduğunda çağrılır. Bu metot, `OnSuccessListener` arayüzünü implemente eden bir nesne alır ve başarılı bir yükleme işlemi gerçekleştiğinde bu nesnenin `onSuccess` metodu çağrılır. Bu kısımda, genellikle başarılı yükleme sonrası yapılacak işlemler yer alır.
+
+6. `addOnFailureListener` metodu, yükleme işlemi başarısız olduğunda çağrılır. Bu metot, `OnFailureListener` arayüzünü implemente eden bir nesne alır ve yükleme işlemi başarısız olduğunda bu nesnenin `onFailure` metodu çağrılır. Bu kısımda, başarısız yükleme sonrası yapılacak işlemler yer alır.
+
+Yukarıdaki açıklamalar, resim yükleme senaryosunu adım adım açıklar. Kullanıcı bir resim seçer ve ardından "Yükle" düğmesine tıklar. Ardından, seçilen resim Firebase Storage'a yüklenir. Eğer yükleme işlemi başarılıysa, `onSuccess` metodu ile ilgili işlemler gerçekleştirilir. Eğer yükleme işlemi başarısız olursa, `onFailure` metodu ile ilgili işlemler gerçekleştirilir.
+´´´´´´´´´´
+Tabii, simitçi örneğiyle bu ifadeyi açıklayalım:
+
+Diyelim ki bir simitçi dükkânı var ve müşteriler sipariş veriyorlar. Siparişlerini veren müşteriler, simitçiye istedikleri simidi belirtirler ve simitçi de bu siparişi hazırlar. Simitçi, siparişi hazırlarken başka işleri de aynı anda yapabilir, örneğin başka bir müşteriye servis yapabilir veya yeni simitler hazırlayabilir.
+
+İşte burada, sipariş veren müşteri bir "UploadTask" nesnesine benzetilebilir. Müşteri, simitçiye bir sipariş verir ve ardından beklemeye başlar. Sipariş vermek, asenkron bir işlemdir; yani müşteri siparişi verdikten sonra beklerken simitçi başka işleri de yapabilir.
+
+Simitçi, müşterinin siparişini alır ve hazırlamaya başlar. Bu süreç de asenkron olarak gerçekleşir; çünkü simitçi bir siparişi hazırlarken diğer müşterilere de hizmet verebilir veya yeni siparişler alabilir.
+
+Sonuç olarak, "Bu işlem, bir UploadTask nesnesi döndürür ve bu işlem asenkron olarak gerçekleşir" ifadesi, simitçi örneğindeki gibi bir durumu açıklar. Müşteri sipariş verir (UploadTask nesnesi oluşturulur) ve ardından beklemeye geçer. Sipariş hazırlanırken (asenkron olarak), müşteri beklemeye devam eder ve simitçi diğer işlerini yapar. Bu süreç tamamlandığında, müşteriye siparişi teslim edilir (başarılı veya başarısız) ve müşteriye geri dönülür.
+´´´´´´´´´´´´´
+Tabii, somutlaştırmak için simitçi örneğini daha detaylı bir şekilde ele alalım:
+
+Diyelim ki bir simitçi dükkânında bir müşteri var ve bu müşteri bir simit siparişi veriyor. Simitçi dükkânında, simit pişirme alanı ve siparişleri hazırlamak için bir tezgah var.
+
+1. Müşteri, simitçiye giderek "Bir simit almak istiyorum." diyor. Bu, müşterinin siparişi verdiği andır.
+2. Simitçi, müşterinin siparişini alır ve simit pişirme alanına gider. Siparişin hazırlanması (simitin pişirilmesi ve istenilen şekilde hazırlanması) bir süre alabilir. Bu süreç, asenkron olarak gerçekleşir; çünkü simitçi aynı anda başka müşterilere de hizmet verebilir veya dükkânla ilgili başka işlerle ilgilenebilir.
+3. Simit hazırlandıktan sonra, simitçi siparişi tezgaha getirir ve müşteriye sunar. Müşteri, siparişini alır ve dükkândan ayrılır.
+
+Şimdi bu örneği, Firebase'de bir dosyanın yüklenmesi süreciyle ilişkilendirelim:
+
+1. Kullanıcı, uygulamada bir fotoğrafı yüklemek istiyor ve "Yükle" düğmesine basıyor. Bu, kullanıcının Firebase Storage'a bir dosya yüklemek istediği andır.
+2. Uygulama, kullanıcının seçtiği fotoğrafı alır ve Firebase Storage'a yüklemek için bir işlem başlatır. Bu işlem, bir "UploadTask" nesnesi oluşturur ve dosyanın yüklenmesi (asenkron olarak) başlar.
+3. Dosyanın yüklenmesi bir süre alabilir ve bu süreç arka planda gerçekleşir. Bu süreçte, kullanıcı uygulamayı kullanmaya devam edebilir veya başka işlemler yapabilir.
+4. Dosya başarıyla yüklendikten sonra veya bir hata oluştuğunda, Firebase Storage işlemi bu durumu bildirir (başarı veya başarısızlık) ve uygulama bu duruma uygun şekilde tepki verir.
+
+Bu şekilde, Firebase Storage'da bir dosyanın yüklenmesi, simitçi dükkânındaki siparişin hazırlanması gibi asenkron bir süreç olarak işler. Müşteri/sipariş sahibi (kullanıcı) siparişi verir ve ardından beklerken (asenkron olarak), simitçi/dosya yükleme işlemi diğer işlerini yapar. Sonunda, sipariş/dosya hazır olduğunda, müşteriye/sipariş sahibine geri bildirim verilir.
+´´´´´´´´´´
+Dosya yükleme işlemi sırasında, uygulama kullanıcının deneyimini geliştirmek veya işlevselliği artırmak için çeşitli işlemler yapabilir. İşte dosya yükleme işlemi sırasında yapılabilecek bazı işlemler:
+
+1. **İlerleme Göstergesi:** Kullanıcıya dosyanın yüklendiğini göstermek için bir ilerleme göstergesi veya yükleme çubuğu sağlanabilir. Bu, kullanıcının dosya yükleme işleminin ilerleyişini görmesine yardımcı olur.
+
+2. **Hata İşleme:** Dosya yükleme sırasında herhangi bir hata oluşabilir. Bu hatalar kullanıcıya bildirilmeli ve uygun bir şekilde ele alınmalıdır. Kullanıcıya neyin yanlış gittiği hakkında bilgi vermek, kullanıcı deneyimini iyileştirebilir.
+
+3. **Arka Planda Diğer İşlemler:** Dosya yükleme işlemi arka planda gerçekleştiğinden, kullanıcı uygulama içinde başka işlemler yapabilir veya uygulamadan ayrılabilir. Uygulama, dosya yükleme işlemi tamamlanana kadar diğer işlemlere devam edebilir.
+
+4. **Yükleme İptali veya Duraklatma:** Kullanıcı dosya yükleme işlemini iptal etmek veya duraklatmak isteyebilir. Bu durumda, uygulama bu isteği karşılayarak dosya yükleme işlemini duraklatabilir veya iptal edebilir.
+
+5. **Ek Bilgilerin Toplanması:** Dosya yükleme işlemi sırasında, kullanıcıdan dosya hakkında ek bilgiler veya açıklama istenebilir. Bu bilgiler dosyanın adı, açıklaması, kategorisi vb. olabilir ve bu bilgiler Firebase veritabanına veya başka bir yere kaydedilebilir.
+
+6. **Dosya Türüne Bağlı İşlemler:** Dosyanın türüne bağlı olarak, dosya yükleme işlemi sırasında farklı işlemler yapılabilir. Örneğin, bir fotoğraf yüklendiğinde, uygulama otomatik olarak bir önizleme gösterebilir veya fotoğrafın boyutunu veya formatını değiştirebilir.
+
+Bu işlemler, dosya yükleme işlemi sırasında kullanıcının deneyimini zenginleştirmek ve daha etkili bir şekilde yönetmek için uygulanabilir.
+´´´´´´´´´´´´´´´
+Evet, dosya yükleme gibi işlemler genellikle asenkron işlemler olarak adlandırılır. Asenkron işlemler, işlemlerin paralel olarak ve birbirine bağlı olmayan şekilde gerçekleştirildiği durumları ifade eder. Dosya yükleme işlemi sırasında, uygulama dosyanın yüklenmesini beklerken diğer işlemleri gerçekleştirebilir ve kullanıcı etkileşimini sürdürebilir. Bu sayede uygulama daha hızlı ve verimli bir şekilde çalışabilir.
+
+Asenkron işlemler, özellikle ağ çağrıları, dosya işlemleri, veritabanı işlemleri gibi zaman alıcı veya giriş/çıkış gerektiren işlemler için yaygın olarak kullanılır. Bu işlemler tamamlandığında genellikle bir geri çağrı veya bir promise gibi bir mekanizma kullanılarak sonuçlar işlenir veya kullanıcıya bildirilir.
+
+Dosya yükleme işlemi sırasında, işlem tamamlandığında veya bir hata oluştuğunda geri çağrılar kullanılarak bu durumlar işlenir ve uygulama duruma göre tepki verir. Bu esneklik, kullanıcı deneyimini iyileştirmek ve uygulamanın daha güvenilir ve etkili olmasını sağlamak için önemlidir.
+´´´´´´´´´´´´´´´´´´´´
  */
