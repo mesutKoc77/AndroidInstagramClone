@@ -27,14 +27,21 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.UUID;
+
 public class UploadActivity extends AppCompatActivity {
 
-    ActivityResultLauncher <Intent> activityResultLauncher; //bu Launcher'lari eger onCreate icerisinde baslatmaz isem bu durum uygulamayi cokertir.
+    ActivityResultLauncher<Intent> activityResultLauncher; //bu Launcher'lari eger onCreate icerisinde baslatmaz isem bu durum uygulamayi cokertir.
     ActivityResultLauncher<String> permissionLauncher;
     /*
     Birincisi (activityResultLauncher) Intent başlatmak için kullanılırken, ikincisi (permissionLauncher) izin istemek için kullanılır.
@@ -54,19 +61,19 @@ public class UploadActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        binding=ActivityUploadBinding.inflate(getLayoutInflater());
-        View view=binding.getRoot();
+        binding = ActivityUploadBinding.inflate(getLayoutInflater());
+        View view = binding.getRoot();
         setContentView(view);
         registerLauncer();
-        fireBaseStorage=FirebaseStorage.getInstance();
-        auth=FirebaseAuth.getInstance();
-        firebaseFirestore=FirebaseFirestore.getInstance();
-        storageReference=fireBaseStorage.getReference();//suan bize bombos bir referan veriyor. Baz bir referans veriyor bize. Referans, biz ilgili oge yi
+        fireBaseStorage = FirebaseStorage.getInstance();
+        auth = FirebaseAuth.getInstance();
+        firebaseFirestore = FirebaseFirestore.getInstance();
+        storageReference = fireBaseStorage.getReference();//suan bize bombos bir referan veriyor. Baz bir referans veriyor bize. Referans, biz ilgili oge yi
         //nereye koyacgimizi takip edecegimiz bir degiskendir.
 
     }
 
-    public void uploadButtonClicked (View view) {
+    public void uploadButtonClicked(View view) {
         //firebase de epolama ile veritabani farkli kavramlar olarak adlandiriliyor ve farkli islevleri var.
         //Depolama, genelde kullanicinin foto, video vb yani buyuk dosyalarinin kayit edildgi bir alan iken
         //Ver tabani ise, kullanicinin mail, sipasiin url i, sohbet uygulamasininda kullanicinin mesajlari vb.
@@ -74,36 +81,90 @@ public class UploadActivity extends AppCompatActivity {
         //BUNUMLA ilgili notlara bu class in en altinda ulasabilirisnn.
 
         if (imageData != null) {
-            storageReference.child("/images/image.png").putFile(imageData).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
-                @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
 
-                }
-            }).addOnFailureListener(new OnFailureListener() {
-                @Override
-                public void onFailure(@NonNull Exception e) {
+            //universal unique id
+            UUID uuid = UUID.randomUUID();
+            String imageName = "images/" + uuid + ".jpg";
 
-                }
-            }); //burasi hakkinda detayli mantik bilgisi asagida Not 7'de.
+            storageReference.child(imageName).putFile(imageData) //yukluyor ama uygulama, arka planda baska islmemler daha yapacagi icin
+                    //asenkron islemler icin asagidaki bazi gorevleri kendisine aktarmamiz gerekiyor.
+                    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() //buradaki UploadTask ile uygulama image yukleme gorevini yapar ama
+                            //arka planda baska gorevleri de yapabilir. TaskSnapshot ise ilgili dosyanin url, adi vb. bilgilerini barindaran bir nesnedir.7. not
+                    {
+                        @Override
+                        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                            //download url
+                            //simdi de storage e yuklemis oldugumuz dosyaninin url ini alacagz ve bunu veritabanina yukleyecegz.
+                            StorageReference newReference = fireBaseStorage.getReference(imageName);
+                            newReference.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    String downloadUrl = uri.toString();
+                                    String comment = binding.commentText.getText().toString();
+                                    FirebaseUser user = auth.getCurrentUser();
+                                    String email = user.getEmail();
+                                    //artik bir image i storage'a kayit ettik ve bu nlarin tmamaini ben firebaseFirestore, veri tabanina kayit etmem gerekiyor.-
+
+                                    //veritabanina kayit edilen degerler, anahtar ve degeri eslesmesi seklinde kayit ediliyordu.
+                                    //dolayisiyla biz bunu HashMap nesnesine kayit etmemiz gerekiyor. Daha sonra bu hashmap nesnesini de firebasestore veritabanina atacagiz.
+
+                                    HashMap<String, Object> postData = new HashMap<String, Object>();
+                                    postData.put("useremail", email);
+                                    postData.put("downloadurl", downloadUrl);
+                                    postData.put("comment", comment);
+                                    postData.put("date", FieldValue.serverTimestamp());
+
+                                    firebaseFirestore.collection("posts").add(postData) //buraya, addOnSuccessListener eklenmediği durumda kod hata verebilir veya beklenmedik sonuçlar üretebilir. Bu durum, Firestore'a veri eklenmeden sonra başka işlemler yapılması gerektiğinde, bu işlemlerin tamamlanmasını beklemek için addOnSuccessListener kullanmanın önemini vurgular. Eğer addOnSuccessListener eklenmezse, veri eklenme işlemi tamamlanmadan önce diğer işlemler gerçekleşebilir ve bu durum istenmeyen sonuçlara neden olabilir. Bu nedenle, asenkron işlemlerde başarı durumunu dinlemek ve uygun işlemleri gerçekleştirmek için addOnSuccessListener gibi uygun listener'ları kullanmak önemlidir.
+                                            //daha ayrintili bilgiler 8. notta.
+
+                                            .addOnSuccessListener(new OnSuccessListener<DocumentReference>() //yani ilgili post yuklenene kadar bekle ve basariyla yuklersen
+                                                    //asagidaki islemi yap.
+                                            {
+                                                @Override
+                                                public void onSuccess(DocumentReference documentReference) {
+                                                    Intent intent = new Intent(UploadActivity.this, FeedActivity.class);
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                                    startActivity(intent);
+                                                }
+                                            }).addOnFailureListener(new OnFailureListener() {
+                                                @Override
+                                                public void onFailure(@NonNull Exception e) {
+                                                    Toast.makeText(UploadActivity.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                                                }
+                                            });
+                                }
+                            }).addOnFailureListener(new OnFailureListener() {
+                                @Override
+                                public void onFailure(@NonNull Exception e) {
+                                    Toast.makeText(UploadActivity.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+
+
+                        }
+                    }).addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(@NonNull Exception e) {
+                            Toast.makeText(UploadActivity.this, e.getLocalizedMessage(), Toast.LENGTH_LONG).show();
+
+                        }
+                    }); //burasi hakkinda detayli mantik bilgisi asagida Not 7'de.
 
 
         }
 
 
-
-
-
     }
 
-    public void selectImage (View view) {
+    public void selectImage(View view) {
         //manifest e izin istedigimizi belirrten kodu ekledik
         //once izin var mi onu kontrol edecgz.
         //eger izin yoksa, asaguida oyzellikle opermissinlerin android. (nokta) dan secmek onemli.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)!= PackageManager.PERMISSION_GRANTED){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED) {
                 //eger izni gostermemenizin mantigini kullaniciya aktarmamiz gerekiyorsa ki bununAndroid sistemin kendisi karar veriyor.
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_MEDIA_IMAGES)){
-                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar",Snackbar.LENGTH_INDEFINITE) //yani kullanici tamam yani anladim diyecegi ana kadar goster demis olduk
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_MEDIA_IMAGES)) {
+                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar", Snackbar.LENGTH_INDEFINITE) //yani kullanici tamam yani anladim diyecegi ana kadar goster demis olduk
                             .setAction("Izin Ver, Give Permission Butonu", new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
@@ -140,10 +201,10 @@ public class UploadActivity extends AppCompatActivity {
         //İlk blok, Manifest.permission.READ_MEDIA_IMAGES iznini kontrol eder.
         //İkinci blok ise Manifest.permission.READ_EXTERNAL_STORAGE iznini kontrol eder.
         else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
 
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)){
-                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar",Snackbar.LENGTH_INDEFINITE)
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+                    Snackbar.make(view, "Izin Gerekli, Permission needed! Snackbar", Snackbar.LENGTH_INDEFINITE)
                             .setAction("Izin Ver, Give Permission Butonu", new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
@@ -151,12 +212,10 @@ public class UploadActivity extends AppCompatActivity {
                                 }
                             })
                             .show();
-                } else
-                {
+                } else {
                     permissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
                 }
-            } else
-            {
+            } else {
                 Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 activityResultLauncher.launch(intentToGallery);
             }
@@ -167,15 +226,15 @@ public class UploadActivity extends AppCompatActivity {
     public void registerLauncer() {
 
         //1. register sonuc ve ne yapmak istedigimiz.
-        activityResultLauncher=registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
+        activityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), new ActivityResultCallback<ActivityResult>() {
             @Override
             public void onActivityResult(ActivityResult result) {
                 //simdi kullanicinin gallery sine gittik, kullanici ne yapti ? Sonuc ne diyoruz? Birseyleri secti mi vaz mi gecti, sd kart mi cikti bunu da kontrol edecgz.
-                if (result.getResultCode()== Activity.RESULT_OK)//hersey ok ise, yani kullanicinin gallerysine gitti isek
+                if (result.getResultCode() == Activity.RESULT_OK)//hersey ok ise, yani kullanicinin gallerysine gitti isek
                 {
                     Intent intentFromResult = result.getData(); //veriyi alirken bana donus bir intent olarak donecek.
                     //simdi bana birseyler dondu ama bu veri bos mu degil mi onu kontrrol ediyoruz.
-                    if (intentFromResult!=null){
+                    if (intentFromResult != null) {
                         //simdi ben bir datayi aldim ama ben bu bunu bir uri ya, yani bir ilgili dosyanin  bulundugu yerin bilgisini Uri degiskenine kayit etmem gerekiyor
                         imageData = intentFromResult.getData();
                         //simdi kullanici ya image View'da almak istedigi goruntuyu gosterecegz
@@ -215,23 +274,22 @@ public class UploadActivity extends AppCompatActivity {
         //2. register sonuc ve ne yapmak istedigimiz.
         // aslinda kodu yazarken ikinci yi yazmaya ilkin baslarsak daha mantikli olabilri. Yni permissionLauncher ve sonrasinda activityResultLauncher
         //methoduna devam etmek daha mantikli gorunuyor.
-        permissionLauncher=registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
+        permissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), new ActivityResultCallback<Boolean>() {
             @Override
             public void onActivityResult(Boolean result) {
                 //evet izin verildikten sonraki durumu anlatmak icin buradaki callback i kullandik.
                 //buradaki paramtree baklildiginda bir result arguman olarak Result verilmi yani,. bize bir izin verildi mi ?
                 //result=true demek bize izin verildigi anlamina geliyor.
-                if (result){
+                if (result) {
                     //yukarida da belittigim gibi. kullanicidan izin alirsak ne yapacagimizi Result Launcher larda anlattik. Yani galeriye gidecek, ordan bilgilweri alcak ve simdi de
                     //o methidu burada cagiracagz. Ki izin Launcher ile activityLauncher imizi irtibatlandirmis olalim-
-                    Intent intentToGallery=new Intent(Intent.ACTION_PICK,MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                    Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                     activityResultLauncher.launch(intentToGallery); // ve yukarida activityResultLauncher'da ne yapmak isteidigmizi anlatmis ve buradad da bu intenti baslt<mis olduk.
-
 
 
                 } else //yani izin verilmez ise?
                 {
-                    Toast.makeText(UploadActivity.this,"Permission needed! permissionLauncher", Toast.LENGTH_LONG).show();
+                    Toast.makeText(UploadActivity.this, "Permission needed! permissionLauncher", Toast.LENGTH_LONG).show();
 
                 }
 
@@ -239,12 +297,7 @@ public class UploadActivity extends AppCompatActivity {
         });
 
 
-
-
     }
-
-
-
 
 
 }
@@ -451,4 +504,45 @@ Asenkron işlemler, özellikle ağ çağrıları, dosya işlemleri, veritabanı 
 
 Dosya yükleme işlemi sırasında, işlem tamamlandığında veya bir hata oluştuğunda geri çağrılar kullanılarak bu durumlar işlenir ve uygulama duruma göre tepki verir. Bu esneklik, kullanıcı deneyimini iyileştirmek ve uygulamanın daha güvenilir ve etkili olmasını sağlamak için önemlidir.
 ´´´´´´´´´´´´´´´´´´´´
+`TaskSnapshot`, Firebase Storage'de gerçekleştirilen bir işlemin sonucunu temsil eden bir nesnedir. Dosya yükleme işlemi tamamlandığında veya hata oluştuğunda, bu nesne işlemin sonucunu içerir.
+
+`TaskSnapshot`, yükleme işleminin ayrıntılarını ve durumunu içeren bilgiler sağlar. Örneğin, yüklenen dosyanın URL'si, dosya boyutu, dosya adı gibi bilgiler bu nesne üzerinden alınabilir.
+
+Yukarıdaki kod örneğinde, `addOnSuccessListener` yöntemi, yükleme işlemi başarılı olduğunda çalışacak olan bir dinleyiciyi belirtir. Bu dinleyici, `TaskSnapshot` nesnesini parametre olarak alır ve yükleme işleminin sonucunu işlemek için kullanılır. Örneğin, yükleme başarılı olduğunda dosyanın URL'sini alıp başka bir işlem yapabilirsiniz.
+
+İşte örnek bir kullanım:
+
+```java
+storageReference.child("/images/image.png").putFile(imageData)
+    .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+        @Override
+        public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+            // Yükleme başarılı olduğunda yapılacak işlemler
+            Uri downloadUrl = taskSnapshot.getDownloadUrl();
+            Log.d("TAG", "Dosya URL'si: " + downloadUrl.toString());
+        }
+    })
+    .addOnFailureListener(new OnFailureListener() {
+        @Override
+        public void onFailure(@NonNull Exception e) {
+            // Yükleme başarısız olduğunda yapılacak işlemler
+            Log.e("TAG", "Dosya yüklenirken hata oluştu: " + e.getMessage());
+        }
+    });
+```
+
+Bu kod örneğinde, `taskSnapshot.getDownloadUrl()` yöntemi ile yüklendiğinde dosyanın indirme URL'si alınmaktadır. Bu URL, yüklenen dosyaya erişmek için kullanılabilir.
+ */
+
+//8.
+/*
+`addOnSuccessListener` ekleyerek, uygulama, bir asenkron işlemin başarıyla tamamlandığını dinlemeye başlar. Bu durumda, `onSuccess` metodu, ilgili işlemin başarıyla gerçekleştirildiği zaman tetiklenir. `addOnSuccessListener` ekleyerek, işlemin başarılı bir şekilde tamamlandığını doğrulamak ve sonuçlara göre uygun işlemleri gerçekleştirmek mümkün olur. Bu sayede, veritabanı işlemleri gibi asenkron işlemlerin sonuçlarını güvenilir bir şekilde yönetmek ve uygulamanın doğru çalışmasını sağlamak mümkün olur.
+Asenkron işlemler, genellikle ağ çağrıları, dosya okuma/yazma işlemleri, veritabanı işlemleri, sensör verisi alımı gibi uzun sürecek veya giriş/çıkış gerektiren işlemler olarak adlandırılabilir. Örneğin:
+
+1. Ağ çağrıları: Sunucudan veri almak veya sunucuya veri göndermek gibi işlemler.
+2. Dosya okuma/yazma işlemleri: Diskteki bir dosyadan veri okuma veya bir dosyaya veri yazma işlemleri.
+3. Veritabanı işlemleri: Veritabanında veri ekleme, güncelleme, silme veya sorgulama işlemleri.
+4. Sensör verisi alımı: Kullanıcının cihazındaki sensörlerden veri almak, örneğin GPS verileri, ivmeölçer verileri vb.
+
+Bu tür işlemler genellikle uygulama akışını engellememek için arka planda veya ayrı bir iş parçacığında gerçekleştirilir. Bu nedenle, işlemin tamamlanma süresi bilinmeyebilir ve işlemin sonucunu beklemek için bir dinleyici eklemek önemlidir. Bu dinleyiciler, işlemin tamamlanma durumunu algılar ve gerektiğinde uygun işlemleri gerçekleştirmek için tetiklenir.
  */
