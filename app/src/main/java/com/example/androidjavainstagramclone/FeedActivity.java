@@ -57,3 +57,20 @@ public class FeedActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 }
+
+//1-
+/*
+Firebase'de "Get data once" ve "Get realtime updates" arasındaki temel fark, veri alım yöntemlerinin sürekliliği ve güncellik sıklığıdır.
+
+1. **Get Data Once (Bir Defaya Mahsus Veri Alma):**
+   - "Get data once" yöntemi, verilerin bir kez alınmasını ve daha sonra güncellemelerin takip edilmemesini sağlar.
+   - Bu yöntem genellikle uygulamanın başlangıcında veya belirli bir zaman aralığında veri almak için kullanılır.
+   - Veriler, bu yöntemle alındıktan sonra, sonraki değişikliklerden haberdar olunmaz ve tekrar istek gönderilmedikçe güncellenmez.
+
+2. **Get Realtime Updates (Gerçek Zamanlı Güncellemeler Almak):**
+   - "Get realtime updates" yöntemi, verilerin sürekli olarak izlenmesini ve herhangi bir değişiklik olduğunda anında bildirilmesini sağlar.
+   - Bu yöntem, Firebase Realtime Database veya Firebase Cloud Firestore gibi gerçek zamanlı veritabanlarıyla kullanılır.
+   - Veriler, uygulama açık olduğu sürece veya belirli bir dinleme işlemi devam ettiği sürece sürekli olarak güncellenir ve değişiklikler anında bildirilir.
+
+Özetle, "Get data once" bir defaya mahsus veri alır ve sonraki güncellemeleri takip etmezken, "Get realtime updates" gerçek zamanlı güncellemeler alır ve verilerin sürekli olarak izlenmesini sağlar. Hangi yöntemin kullanılacağı, uygulamanın ihtiyaçlarına ve veri alım gereksinimlerine bağlıdır.
+ */
