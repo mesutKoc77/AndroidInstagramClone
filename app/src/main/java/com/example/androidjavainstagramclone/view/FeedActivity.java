@@ -23,6 +23,7 @@ import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
@@ -73,7 +74,9 @@ public class FeedActivity extends AppCompatActivity {
         //CollectionReference documentReference=firebaseFirestore.collection("posts");
         //asagidaki koddan hata aliyrsan bu ikisini de deneyabilirsin.
 
-        firebaseFirestore.collection("posts").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        firebaseFirestore.collection("posts").orderBy("date", Query.Direction.DESCENDING).addSnapshotListener(new EventListener<QuerySnapshot>()
+            //burada collection dan sonra .where diyerek cesitli filtrelemler yaparak ornegin sadece takip ettiklerim veya suna esit olan seyleri getir diyebiliyouz.
+        {
             @SuppressLint("NotifyDataSetChanged")
             @Override
             public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
