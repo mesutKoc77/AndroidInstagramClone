@@ -54,19 +54,21 @@ public class UploadActivity extends AppCompatActivity {
 
     private StorageReference storageReference;//6.bolumde ayrinti var. Örneğin, bir ürün resmi yüklemek istediğinizde, bu referansı kullanarak ilgili klasöre erişebilir ve resmi yükleyebilirsiniz. Bu sayede Firebase Storage'da dosyaları organize etmek ve yönetmek daha kolay hale gelir.
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityUploadBinding.inflate(getLayoutInflater());
         View view = binding.getRoot();
         setContentView(view);
+
         registerLauncer();
+
         fireBaseStorage = FirebaseStorage.getInstance();
         auth = FirebaseAuth.getInstance();
         firebaseFirestore = FirebaseFirestore.getInstance();
         storageReference = fireBaseStorage.getReference();//suan bize bombos bir referan veriyor. Baz bir referans veriyor bize. Referans, biz ilgili oge yi
         //nereye koyacgimizi takip edecegimiz bir degiskendir.
+
 
     }
 
@@ -82,8 +84,7 @@ public class UploadActivity extends AppCompatActivity {
             //universal unique id
             UUID uuid = UUID.randomUUID();
             String imageName = "images/" + uuid + ".jpg";
-
-            storageReference.child(imageName).putFile(imageData) //yukluyor ama uygulama, arka planda baska islmemler daha yapacagi icin
+            fireBaseStorage.getReference().child(imageName).putFile(imageData) //yukluyor ama uygulama, arka planda baska islmemler daha yapacagi icin
                     //asenkron islemler icin asagidaki bazi gorevleri kendisine aktarmamiz gerekiyor.
                     .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() //buradaki UploadTask ile uygulama image yukleme gorevini yapar ama
                             //arka planda baska gorevleri de yapabilir. TaskSnapshot ise ilgili dosyanin url, adi vb. bilgilerini barindaran bir nesnedir.7. not
@@ -146,8 +147,6 @@ public class UploadActivity extends AppCompatActivity {
 
                         }
                     }); //burasi hakkinda detayli mantik bilgisi asagida Not 7'de.
-
-
         }
 
 
@@ -282,21 +281,13 @@ public class UploadActivity extends AppCompatActivity {
                     //o methidu burada cagiracagz. Ki izin Launcher ile activityLauncher imizi irtibatlandirmis olalim-
                     Intent intentToGallery = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                     activityResultLauncher.launch(intentToGallery); // ve yukarida activityResultLauncher'da ne yapmak isteidigmizi anlatmis ve buradad da bu intenti baslt<mis olduk.
-
-
                 } else //yani izin verilmez ise?
                 {
                     Toast.makeText(UploadActivity.this, "Permission needed! permissionLauncher", Toast.LENGTH_LONG).show();
-
                 }
-
             }
         });
-
-
     }
-
-
 }
 //1.
 /*

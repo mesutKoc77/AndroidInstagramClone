@@ -27,6 +27,8 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 public class FeedActivity extends AppCompatActivity {
@@ -86,7 +88,6 @@ public class FeedActivity extends AppCompatActivity {
                 }
                 if (value!=null) {
 
-
                     for (DocumentSnapshot snapshot : value.getDocuments()) //yani donen Dokumanlarin dizisinden, her biri icerisinde DocumentSnapshot'lari al ve snapshot
                         //isismli dokumantasyona kayit et.
                     {
@@ -98,8 +99,11 @@ public class FeedActivity extends AppCompatActivity {
 
                         Post post=new Post(userEmail, comment, downloadUrl);
                         postArrayList.add(post);
-
                     }
+                    System.out.println("0"+postArrayList.get(0));
+                    System.out.println("1"+postArrayList.get(1));
+                    System.out.println("2"+postArrayList.get(2));
+                    System.out.println("3"+postArrayList.get(3));
                     postAdapter.notifyDataSetChanged();
 
                 }

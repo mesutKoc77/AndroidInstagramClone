@@ -10,5 +10,9 @@ public class Post {
         this.comment = comment;
         this.downloadUrl = downloadUrl;
     }
+    @Override
+    public String toString() {
+        return "Username: " + email + ", Comment: " + comment + ", DownloadUrl: " + downloadUrl;
+    }
 
 }

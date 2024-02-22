@@ -43,6 +43,7 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostHolder> {
 
     class PostHolder extends RecyclerView.ViewHolder {
 
+
         RecyclerRowBinding recyclerRowBinding;
 
         public PostHolder(RecyclerRowBinding recyclerRowBinding) {
